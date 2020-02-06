@@ -114,6 +114,7 @@ static unsigned long long GetTickMS()
 #endif
 }
 
+/* no longer use
 static pid_t GetPid()
 {
     static __thread pid_t pid = 0;
@@ -141,7 +142,6 @@ static pid_t GetPid()
     return tid;
 
 }
-/*
 static pid_t GetPid()
 {
 	char **p = (char**)pthread_self();
@@ -535,6 +535,17 @@ void co_free( stCoRoutine_t *co )
         free(co->stack_mem->stack_buffer);
         free(co->stack_mem);
     }   
+    //walkerdu fix at 2018-01-20
+    //存在内存泄漏
+    else 
+    {
+        if(co->save_buffer)
+            free(co->save_buffer);
+
+        if(co->stack_mem->occupy_co == co)
+            co->stack_mem->occupy_co = NULL;
+    }
+
     free( co );
 }
 void co_release( stCoRoutine_t *co )
@@ -558,6 +569,31 @@ void co_resume( stCoRoutine_t *co )
 
 
 }
+
+
+// walkerdu 2018-01-14                                                                              
+// 用于reset超时无法重复使用的协程                                                                  
+void co_reset(stCoRoutine_t * co)
+{
+    if(!co->cStart || co->cIsMain)
+        return;
+
+    co->cStart = 0;
+    co->cEnd = 0;
+
+    // 如果当前协程有共享栈被切出的buff，要进行释放
+    if(co->save_buffer)
+    {
+        free(co->save_buffer);
+        co->save_buffer = NULL;
+        co->save_size = 0;
+    }
+
+    // 如果共享栈被当前协程占用，要释放占用标志，否则被切换，会执行save_stack_buffer()
+    if(co->stack_mem->occupy_co == co)
+        co->stack_mem->occupy_co = NULL;
+}
+
 void co_yield_env( stCoRoutineEnv_t *env )
 {
 	
@@ -701,12 +737,12 @@ static short EpollEvent2Poll( uint32_t events )
 	return e;
 }
 
-static stCoRoutineEnv_t* g_arrCoEnvPerThread[ 204800 ] = { 0 };
+static __thread stCoRoutineEnv_t* gCoEnvPerThread = NULL;
+
 void co_init_curr_thread_env()
 {
-	pid_t pid = GetPid();	
-	g_arrCoEnvPerThread[ pid ] = (stCoRoutineEnv_t*)calloc( 1,sizeof(stCoRoutineEnv_t) );
-	stCoRoutineEnv_t *env = g_arrCoEnvPerThread[ pid ];
+	gCoEnvPerThread = (stCoRoutineEnv_t*)calloc( 1, sizeof(stCoRoutineEnv_t) );
+	stCoRoutineEnv_t *env = gCoEnvPerThread;
 
 	env->iCallStackSize = 0;
 	struct stCoRoutine_t *self = co_create_env( env, NULL, NULL,NULL );
@@ -724,7 +760,7 @@ void co_init_curr_thread_env()
 }
 stCoRoutineEnv_t *co_get_curr_thread_env()
 {
-	return g_arrCoEnvPerThread[ GetPid() ];
+	return gCoEnvPerThread;
 }
 
 void OnPollProcessEvent( stTimeoutItem_t * ap )
