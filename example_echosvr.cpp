@@ -18,7 +18,7 @@
 
 
 
-#include "co_routine.h"
+#include "co.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +44,7 @@
 using namespace std;
 struct task_t
 {
-	stCoRoutine_t *co;
+	co_routine_t *co;
 	int fd;
 };
 
@@ -237,11 +237,12 @@ int main(int argc,char *argv[])
 			task_t * task = (task_t*)calloc( 1,sizeof(task_t) );
 			task->fd = -1;
 
-			co_create( &(task->co),NULL,readwrite_routine,task );
+			// co_create( &(task->co),NULL,readwrite_routine,task );
+			task->co = co_create(NULL,readwrite_routine,task );
 			co_resume( task->co );
 
 		}
-		stCoRoutine_t *accept_co = NULL;
+		co_routine_t *accept_co = NULL;
 		co_create( &accept_co,NULL,accept_routine,0 );
 		co_resume( accept_co );
 

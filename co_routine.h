@@ -46,6 +46,9 @@ typedef void *(*pfn_co_routine_t)( void * );
 //2.co_routine
 
 int 	co_create( stCoRoutine_t **co,const stCoRoutineAttr_t *attr,void *(*routine)(void*),void *arg );
+
+stCoRoutine_t * co_create(const stCoRoutineAttr_t *attr,pfn_co_routine_t routine,void *arg );
+
 void    co_resume( stCoRoutine_t *co );
 void    co_yield( stCoRoutine_t *co );
 void    co_yield_ct(); //ct = current thread
@@ -89,5 +92,7 @@ stShareStack_t* co_alloc_sharestack(int iCount, int iStackSize);
 void co_set_env_list( const char *name[],size_t cnt);
 
 void co_log_err( const char *fmt,... );
+
+
 #endif
 
