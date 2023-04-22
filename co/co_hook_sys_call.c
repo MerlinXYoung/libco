@@ -783,7 +783,7 @@ int setenv(const char *n, const char *value, int overwrite) {
         if (overwrite || !e->value) {
           if (e->value)
             free(e->value);
-          e->value = value != NULL ? strdup(value) : NULL;
+          e->value = (value != NULL ? strdup(value) : NULL);
         }
         return 0;
       }
@@ -991,8 +991,8 @@ struct hostent *co_gethostbyname(const char *name) {
 
 void co_enable_hook_sys() //这函数必须在这里,否则本文件会被忽略！！！
 {
-  co_t *uthread = get_current_uthread();
-  if (uthread) {
-    uthread->cEnableSysHook = 1;
+  co_t *co = get_current_co();
+  if (co) {
+    co->cEnableSysHook = 1;
   }
 }

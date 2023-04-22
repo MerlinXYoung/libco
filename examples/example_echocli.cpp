@@ -134,7 +134,7 @@ static void *readwrite_routine(void *arg) {
     if (ret > 0) {
       ret = read(fd, buf, sizeof(buf));
       if (ret <= 0) {
-        printf("uthread %p read ret %d errno %d (%s)\n", co_self(), ret, errno,
+        printf("co %p read ret %d errno %d (%s)\n", co_self(), ret, errno,
                strerror(errno));
         close(fd);
         fd = -1;
@@ -144,7 +144,7 @@ static void *readwrite_routine(void *arg) {
         AddSuccCnt();
       }
     } else {
-      printf("uthread %p write ret %d errno %d (%s)\n", co_self(), ret, errno,
+      printf("co %p write ret %d errno %d (%s)\n", co_self(), ret, errno,
              strerror(errno));
       close(fd);
       fd = -1;
@@ -175,10 +175,10 @@ int main(int argc, char *argv[]) {
       break;
     }
     for (int i = 0; i < cnt; i++) {
-      printf("create uthread %d\n", i);
-      co_t *uthread = 0;
-      co_create(&uthread, NULL, readwrite_routine, &endpoint);
-      co_resume(uthread);
+      printf("create co %d\n", i);
+      co_t *co = 0;
+      co_create(&co, NULL, readwrite_routine, &endpoint);
+      co_resume(co);
     }
     co_eventloop_ct();
 

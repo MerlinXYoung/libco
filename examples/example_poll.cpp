@@ -42,7 +42,7 @@ available.
 using namespace std;
 
 struct task_t {
-  co_t *uthread;
+  co_t *co;
   int fd;
   struct sockaddr_in addr;
 };
@@ -104,7 +104,7 @@ static void *poll_routine(void *arg) {
     v[i].fd = fd;
 
     int ret = connect(fd, (struct sockaddr *)&v[i].addr, sizeof(v[i].addr));
-    printf("uthread %p connect i %ld ret %d errno %d (%s)\n", co_self(), i, ret,
+    printf("co %p connect i %ld ret %d errno %d (%s)\n", co_self(), i, ret,
            errno, strerror(errno));
   }
   struct pollfd *pf =
@@ -118,9 +118,9 @@ static void *poll_routine(void *arg) {
   size_t iWaitCnt = v.size();
   for (;;) {
     int ret = poll(pf, iWaitCnt, 1000);
-    printf("uthread %p poll wait %ld ret %d\n", co_self(), iWaitCnt, ret);
+    printf("co %p poll wait %ld ret %d\n", co_self(), iWaitCnt, ret);
     for (int i = 0; i < (int)iWaitCnt; i++) {
-      printf("uthread %p fire fd %d revents 0x%X POLLOUT 0x%X POLLERR 0x%X "
+      printf("co %p fire fd %d revents 0x%X POLLOUT 0x%X POLLERR 0x%X "
              "POLLHUP "
              "0x%X\n",
              co_self(), pf[i].fd, pf[i].revents, POLLOUT, POLLERR, POLLHUP);
@@ -147,7 +147,7 @@ static void *poll_routine(void *arg) {
     v[i].fd = -1;
   }
 
-  printf("uthread %p task cnt %ld fire %ld\n", co_self(), v.size(),
+  printf("co %p task cnt %ld fire %ld\n", co_self(), v.size(),
          setRaiseFds.size());
   return 0;
 }
@@ -166,12 +166,12 @@ int main(int argc, char *argv[]) {
   printf("--------------------- routine -------------------\n");
 
   for (int i = 0; i < 10; i++) {
-    co_t *uthread = 0;
+    co_t *co = 0;
     vector<task_t> *v2 = new vector<task_t>();
     *v2 = v;
-    co_create(&uthread, NULL, poll_routine, v2);
+    co_create(&co, NULL, poll_routine, v2);
     printf("routine i %d\n", i);
-    co_resume(uthread);
+    co_resume(co);
   }
 
   co_eventloop_ct();

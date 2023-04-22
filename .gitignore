@@ -1,3 +1,6 @@
+.vscode
+.cache
+build
 README.md
 
 # Prerequisites

@@ -74,7 +74,7 @@ void co_init_curr_thread_env();
 co_env_t *co_get_curr_thread_env();
 
 // 2.coroutine
-void co_free(co_t *uthread);
+void co_free(co_t *co);
 void co_yield_env(co_env_t *env);
 
 // 3.func
@@ -92,7 +92,7 @@ struct co_epoll_s;
 co_epoll_t *alloc_epoll();
 void free_epoll(co_epoll_t *ctx);
 
-co_t *get_current_uthread();
+co_t *get_current_co();
 void set_epoll(co_env_t *env, co_epoll_t *ev);
 
 // typedef void (*co_routine_fn)();

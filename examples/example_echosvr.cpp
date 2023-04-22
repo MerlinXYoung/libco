@@ -42,7 +42,7 @@ available.
 
 using namespace std;
 struct task_t {
-  co_t *uthread;
+  co_t *co;
   int fd;
 };
 
@@ -62,17 +62,17 @@ static void *readwrite_routine(void *arg) {
 
   co_enable_hook_sys();
 
-  task_t *uthread = (task_t *)arg;
+  task_t *co = (task_t *)arg;
   char buf[1024 * 16];
   for (;;) {
-    if (-1 == uthread->fd) {
-      g_readwrite.push(uthread);
+    if (-1 == co->fd) {
+      g_readwrite.push(co);
       co_yield_ct();
       continue;
     }
 
-    int fd = uthread->fd;
-    uthread->fd = -1;
+    int fd = co->fd;
+    co->fd = -1;
 
     for (;;) {
       struct pollfd pf = {0};
@@ -126,10 +126,10 @@ static void *accept_routine(void *) {
       continue;
     }
     SetNonBlock(fd);
-    task_t *uthread = g_readwrite.top();
-    uthread->fd = fd;
+    task_t *co = g_readwrite.top();
+    co->fd = fd;
     g_readwrite.pop();
-    co_resume(uthread->uthread);
+    co_resume(co->co);
   }
   return 0;
 }
@@ -208,8 +208,8 @@ int main(int argc, char *argv[]) {
       task_t *task = (task_t *)calloc(1, sizeof(task_t));
       task->fd = -1;
 
-      co_create(&(task->uthread), NULL, readwrite_routine, task);
-      co_resume(task->uthread);
+      co_create(&(task->co), NULL, readwrite_routine, task);
+      co_resume(task->co);
     }
     co_t *accept_co = NULL;
     co_create(&accept_co, NULL, accept_routine, 0);

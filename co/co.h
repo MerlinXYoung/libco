@@ -47,17 +47,17 @@ typedef void *(*co_routine_fn)(void *);
 
 // 2.co_routine
 
-int co_create(co_t **uthread, const co_attr_t *attr, void *(*routine)(void *),
+int co_create(co_t **co, const co_attr_t *attr, void *(*routine)(void *),
               void *arg);
 
-void co_resume(co_t *uthread);
-void co_yield (co_t *uthread);
+void co_resume(co_t *co);
+void co_yield (co_t *co);
 // FORCE_INLINE void co_yield_ct() { // ct = current thread
 //   co_yield_env(co_get_curr_thread_env());
 // }
 void co_yield_ct(); // ct = current thread
-void co_release(co_t *uthread);
-void co_reset(co_t *uthread);
+void co_release(co_t *co);
+void co_reset(co_t *co);
 
 co_t *co_self();
 

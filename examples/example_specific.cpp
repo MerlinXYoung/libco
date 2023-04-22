@@ -25,7 +25,7 @@ available.
 #include <vector>
 using namespace std;
 struct stRoutineArgs_t {
-  co_t *uthread;
+  co_t *co;
   int routine_id;
 };
 struct stRoutineSpecificData_t {
@@ -49,8 +49,8 @@ int main() {
   stRoutineArgs_t args[10];
   for (int i = 0; i < 10; i++) {
     args[i].routine_id = i;
-    co_create(&args[i].uthread, NULL, RoutineFunc, (void *)&args[i]);
-    co_resume(args[i].uthread);
+    co_create(&args[i].co, NULL, RoutineFunc, (void *)&args[i]);
+    co_resume(args[i].co);
   }
   co_eventloop(co_get_epoll_ct(), NULL, NULL);
   return 0;

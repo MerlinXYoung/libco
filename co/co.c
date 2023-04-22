@@ -379,13 +379,13 @@ inline void take_all_timeout(timeout_t *apTimeout, unsigned long long allNow,
   apTimeout->ullStart = allNow;
   apTimeout->llStartIdx += cnt - 1;
 }
-static void *_co_routine(co_t *uthread, void *) {
-  if (uthread->pfn) {
-    uthread->pfn(uthread->arg);
+static void *_co_routine(co_t *co, void *) {
+  if (co->pfn) {
+    co->pfn(co->arg);
   }
-  uthread->cEnd = 1;
+  co->cEnd = 1;
 
-  co_env_t *env = uthread->env;
+  co_env_t *env = co->env;
 
   co_yield_env(env);
 
@@ -456,61 +456,61 @@ int co_create(co_t **ppco, const co_attr_t *attr, co_routine_fn pfn,
   if (!co_get_curr_thread_env()) {
     co_init_curr_thread_env();
   }
-  co_t *uthread = co_create_env(co_get_curr_thread_env(), attr, pfn, arg);
-  *ppco = uthread;
+  co_t *co = co_create_env(co_get_curr_thread_env(), attr, pfn, arg);
+  *ppco = co;
   return 0;
 }
-void co_free(co_t *uthread) {
-  if (!uthread->cIsShareStack) {
-    free(uthread->stack_mem->stack_buffer);
-    free(uthread->stack_mem);
+void co_free(co_t *co) {
+  if (!co->cIsShareStack) {
+    free(co->stack_mem->stack_buffer);
+    free(co->stack_mem);
   }
   // walkerdu fix at 2018-01-20
   //存在内存泄漏
   else {
-    if (uthread->save_buffer)
-      free(uthread->save_buffer);
+    if (co->save_buffer)
+      free(co->save_buffer);
 
-    if (uthread->stack_mem->occupy_co == uthread)
-      uthread->stack_mem->occupy_co = NULL;
+    if (co->stack_mem->occupy_co == co)
+      co->stack_mem->occupy_co = NULL;
   }
 
-  free(uthread);
+  free(co);
 }
-void co_release(co_t *uthread) { co_free(uthread); }
+void co_release(co_t *co) { co_free(co); }
 
 void co_swap(co_t *curr, co_t *pending_co);
 
-void co_resume(co_t *uthread) {
-  co_env_t *env = uthread->env;
+void co_resume(co_t *co) {
+  co_env_t *env = co->env;
   co_t *lpCurrRoutine = env->pCallStack[env->iCallStackSize - 1];
-  if (!uthread->cStart) {
-    coctx_make(&uthread->ctx, (coctx_pfn_t)_co_routine, uthread, 0);
-    uthread->cStart = 1;
+  if (!co->cStart) {
+    coctx_make(&co->ctx, (coctx_pfn_t)_co_routine, co, 0);
+    co->cStart = 1;
   }
-  env->pCallStack[env->iCallStackSize++] = uthread;
-  co_swap(lpCurrRoutine, uthread);
+  env->pCallStack[env->iCallStackSize++] = co;
+  co_swap(lpCurrRoutine, co);
 }
 
 // walkerdu 2018-01-14
 // 用于reset超时无法重复使用的协程
-void co_reset(co_t *uthread) {
-  if (!uthread->cStart || uthread->cIsMain)
+void co_reset(co_t *co) {
+  if (!co->cStart || co->cIsMain)
     return;
 
-  uthread->cStart = 0;
-  uthread->cEnd = 0;
+  co->cStart = 0;
+  co->cEnd = 0;
 
   // 如果当前协程有共享栈被切出的buff，要进行释放
-  if (uthread->save_buffer) {
-    free(uthread->save_buffer);
-    uthread->save_buffer = NULL;
-    uthread->save_size = 0;
+  if (co->save_buffer) {
+    free(co->save_buffer);
+    co->save_buffer = NULL;
+    co->save_size = 0;
   }
 
   // 如果共享栈被当前协程占用，要释放占用标志，否则被切换，会执行save_stack_buffer()
-  if (uthread->stack_mem->occupy_co == uthread)
-    uthread->stack_mem->occupy_co = NULL;
+  if (co->stack_mem->occupy_co == co)
+    co->stack_mem->occupy_co = NULL;
 }
 
 void co_yield_env(co_env_t *env) {
@@ -524,7 +524,7 @@ void co_yield_env(co_env_t *env) {
 }
 
 void co_yield_ct() { co_yield_env(co_get_curr_thread_env()); }
-void co_yield (co_t *uthread) { co_yield_env(uthread->env); }
+void co_yield (co_t *co) { co_yield_env(co->env); }
 
 void save_stack_buffer(co_t *occupy_co) {
   /// copy out
@@ -553,9 +553,9 @@ void co_swap(co_t *curr, co_t *pending_co) {
     env->occupy_co = NULL;
   } else {
     env->pending_co = pending_co;
-    // get last occupy uthread on the same stack mem
+    // get last occupy co on the same stack mem
     co_t *occupy_co = pending_co->stack_mem->occupy_co;
-    // set pending uthread to occupy thest stack mem;
+    // set pending co to occupy thest stack mem;
     pending_co->stack_mem->occupy_co = pending_co;
 
     env->occupy_co = occupy_co;
@@ -671,8 +671,8 @@ void co_init_curr_thread_env() {
 co_env_t *co_get_curr_thread_env() { return gCoEnvPerThread; }
 
 void _on_poll_process_event(timeout_item_t *ap) {
-  co_t *uthread = (co_t *)ap->pArg;
-  co_resume(uthread);
+  co_t *co = (co_t *)ap->pArg;
+  co_resume(co);
 }
 
 void _on_poll_prepare(timeout_item_t *ap, struct epoll_event *e,
@@ -755,8 +755,8 @@ void co_eventloop(co_epoll_t *ctx, co_eventloop_fn pfn, void *arg) {
   }
 }
 void OnCoroutineEvent(timeout_item_t *ap) {
-  co_t *uthread = (co_t *)ap->pArg;
-  co_resume(uthread);
+  co_t *co = (co_t *)ap->pArg;
+  co_resume(co);
 }
 
 co_epoll_t *alloc_epoll() {
@@ -786,7 +786,7 @@ void free_epoll(co_epoll_t *ctx) {
 co_t *get_current_co_by(co_env_t *env) {
   return env->pCallStack[env->iCallStackSize - 1];
 }
-co_t *get_current_uthread() {
+co_t *get_current_co() {
   co_env_t *env = co_get_curr_thread_env();
   if (!env)
     return 0;
@@ -904,39 +904,39 @@ co_epoll_t *co_get_epoll_ct() {
 }
 #define HOOK_PTHREAD_SPEC_SIZE 1024
 struct stHookPThreadSpec_t {
-  co_t *uthread;
+  co_t *co;
   void *value;
 };
 void *co_getspecific(pthread_key_t key) {
-  co_t *uthread = get_current_uthread();
-  if (!uthread || uthread->cIsMain) {
+  co_t *co = get_current_co();
+  if (!co || co->cIsMain) {
     return pthread_getspecific(key);
   }
-  return uthread->aSpec[key].value;
+  return co->aSpec[key].value;
 }
 int co_setspecific(pthread_key_t key, const void *value) {
-  co_t *uthread = get_current_uthread();
-  if (!uthread || uthread->cIsMain) {
+  co_t *co = get_current_co();
+  if (!co || co->cIsMain) {
     return pthread_setspecific(key, value);
   }
-  uthread->aSpec[key].value = (void *)value;
+  co->aSpec[key].value = (void *)value;
   return 0;
 }
 
 void co_disable_hook_sys() {
-  co_t *uthread = get_current_uthread();
-  if (uthread) {
-    uthread->cEnableSysHook = 0;
+  co_t *co = get_current_co();
+  if (co) {
+    co->cEnableSysHook = 0;
   }
 }
 bool co_is_enable_sys_hook() {
-  co_t *uthread = get_current_uthread();
-  return (uthread && uthread->cEnableSysHook);
+  co_t *co = get_current_co();
+  return (co && co->cEnableSysHook);
 }
 
-co_t *co_self() { return get_current_uthread(); }
+co_t *co_self() { return get_current_co(); }
 
-// uthread cond
+// co cond
 typedef struct co_cond_s co_cond_t;
 typedef struct co_cond_item_s co_cond_item_t;
 struct co_cond_item_s {
@@ -951,8 +951,8 @@ struct co_cond_s {
   co_cond_item_t *tail;
 };
 static void OnSignalProcessEvent(timeout_item_t *ap) {
-  co_t *uthread = (co_t *)ap->pArg;
-  co_resume(uthread);
+  co_t *co = (co_t *)ap->pArg;
+  co_resume(co);
 }
 
 co_cond_item_t *co_cond_pop(co_cond_t *link);
@@ -983,7 +983,7 @@ int co_cond_broadcast(co_cond_t *si) {
 
 int co_cond_timedwait(co_cond_t *link, int ms) {
   co_cond_item_t *psi = (co_cond_item_t *)calloc(1, sizeof(co_cond_item_t));
-  psi->timeout.pArg = get_current_uthread();
+  psi->timeout.pArg = get_current_co();
   psi->timeout.pfnProcess = OnSignalProcessEvent;
 
   if (ms > 0) {

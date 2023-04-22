@@ -46,12 +46,12 @@ int main() {
   attr.stack_size = 0;
   attr.share_stack = share_stack;
 
-  co_t *uthread[2];
+  co_t *co[2];
   int routineid[2];
   for (int i = 0; i < 2; i++) {
     routineid[i] = i;
-    co_create(&uthread[i], &attr, RoutineFunc, routineid + i);
-    co_resume(uthread[i]);
+    co_create(&co[i], &attr, RoutineFunc, routineid + i);
+    co_resume(co[i]);
   }
   co_eventloop(co_get_epoll_ct(), NULL, NULL);
   return 0;

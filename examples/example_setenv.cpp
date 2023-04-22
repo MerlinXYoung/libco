@@ -72,10 +72,10 @@ int main(int argc, char *argv[]) {
                   sizeof(CGI_ENV_HOOK_LIST) / sizeof(char *));
   stRoutineArgs_t args[3];
   for (int i = 0; i < 3; i++) {
-    co_t *uthread = NULL;
+    co_t *co = NULL;
     args[i].iRoutineID = i;
-    co_create(&uthread, NULL, RoutineFunc, &args[i]);
-    co_resume(uthread);
+    co_create(&co, NULL, RoutineFunc, &args[i]);
+    co_resume(co);
   }
   co_eventloop(co_get_epoll_ct(), NULL, NULL);
   return 0;
