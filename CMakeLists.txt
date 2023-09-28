@@ -20,9 +20,9 @@ set_source_files_properties(
 
 # Add source files
 # list(APPEND CMAKE_C_SOURCE_FILE_EXTENSIONS .S)
-aux_source_directory(co SOURCE_FILES)
-list(APPEND SOURCE_FILES co/coctx_swap.S)
-file(GLOB HEADER_FILES co/*.h)
+aux_source_directory(src SOURCE_FILES)
+list(APPEND SOURCE_FILES src/coctx_swap.S)
+file(GLOB HEADER_FILES src/*.h)
 
 
 # Add static and shared library target
@@ -42,9 +42,9 @@ set_target_properties(co_shared PROPERTIES VERSION ${LIBCO_VERSION} SOVERSION ${
 install(TARGETS co_static co_shared)
 
 install(FILES ${HEADER_FILES}
-    DESTINATION include/co
+    DESTINATION include/
 )
-include_directories(co)
+include_directories(src)
 aux_source_directory(examples EXAMPLE_FILES)
 
 foreach(SRC ${EXAMPLE_FILES})
