@@ -42,7 +42,7 @@ struct coctx_s {
 
 int coctx_init(coctx_t *ctx);
 int coctx_make(coctx_t *ctx, coctx_pfn_t pfn, const void *s, const void *s1);
-extern void coctx_swap(coctx_t *, coctx_t *) asm("coctx_swap");
+extern void coctx_swap(coctx_t *, coctx_t *) __asm__("coctx_swap");
 #ifdef __cplusplus
 }
 #endif
