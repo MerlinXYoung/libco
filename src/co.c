@@ -352,7 +352,7 @@ int add_timeout(timeout_t *apTimeout, timeout_item_t *apItem, uint64_t allNow) {
 
   return 0;
 }
-inline void take_all_timeout(timeout_t *apTimeout, unsigned long long allNow,
+static inline void take_all_timeout(timeout_t *apTimeout, unsigned long long allNow,
                              timeout_item_link_t *apResult) {
   if (apTimeout->ullStart == 0) {
     apTimeout->ullStart = allNow;

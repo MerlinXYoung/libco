@@ -1,5 +1,6 @@
 .vscode
 .cache
+.xmake
 build
 README.md
 
